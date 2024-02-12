@@ -1,0 +1,26 @@
+{
+	"name": "strawcoin",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"deploy:token": "npx hardhat run --network testnet scripts/deploy.ts",
+		"deploy:ico": "npx hardhat run --network testnet scripts/deployIco.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@nomicfoundation/hardhat-toolbox": "^4.0.0",
+		"@types/chai": "^4.3.11",
+		"@types/mocha": "^10.0.6",
+		"@types/node": "^20.11.16",
+		"chai": "^4.4.1",
+		"hardhat": "^2.19.5",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.3.3"
+	},
+	"dependencies": {
+		"@openzeppelin/contracts": "^5.0.1"
+	}
+}
