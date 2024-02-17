@@ -1,4 +1,5 @@
 import React, { createContext, ReactNode, useContext } from 'react';
+import address from '../contracts/contract-address.json';
 import useWallet, { WalletData } from '../hooks/useWallet';
 
 interface WalletProviderProps {
@@ -6,7 +7,7 @@ interface WalletProviderProps {
 }
 
 const WalletContext = createContext<WalletData | undefined>(undefined);
-const contractAddress = '0x6eCC4bB3D77b82Bfe68Ce2d53F1f720aD6BB602e';
+const contractAddress = address.StrawCoinIco;
 
 const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
 	const walletData = useWallet(contractAddress);

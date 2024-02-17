@@ -30,7 +30,10 @@ const config: HardhatUserConfig = {
       gasPrice: 'auto',
       accounts: {mnemonic: mnemonic}
     },
-    hardhat: {},
+    hardhat: {
+      accounts: {mnemonic: mnemonic},
+      chainId: 1337,
+    },
   },
 };
 

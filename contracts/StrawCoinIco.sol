@@ -67,4 +67,16 @@ contract StrawCoinIco is Ownable {
    function getBalanceToken() public view returns(uint256) {
       return balancesToken[msg.sender];
    }
+
+   function getOpeningTime() public view returns(uint256) {
+      return openingTime;
+   }
+
+   function getClosingTime() public view returns(uint256) {
+      return closingTime;
+   }
+
+   function getHardCap() public view returns(uint256) {
+      return hardCap;
+   }
 }

@@ -42,6 +42,8 @@ Before you begin, ensure you have the following installed:
    cd strawcoin
    ```
 
-3. ```bash
-   npm install
-   ```
+3.Install dependencies:
+
+```bash
+npm install
+```

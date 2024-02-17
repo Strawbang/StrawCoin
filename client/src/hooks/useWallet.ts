@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { useState } from 'react';
-import StrawCoinIco from '../artifacts/contracts/StrawCoinIco.sol/StrawCoinIco.json';
+import StrawCoinIco from '../contracts/StrawCoinIco.json';
 
 
 export interface WalletData {
@@ -20,6 +20,7 @@ const useWallet = (contractAddress: string) => {
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
   const [tokenBalance, setTokenBalance] = useState<string | null>(null);
+  const [hardCap, setHardCap] = useState<string | null>(null);
 
   const connectWallet = async () => {
     if (window.ethereum) {
@@ -36,11 +37,13 @@ const useWallet = (contractAddress: string) => {
         );
         const ethBalance = await contract.getBalance();
         const tokenBalance = await contract.getBalanceToken();
+        const hardCap = await contract.hardCap();
         setWeb3(provider);
         setContract(contract);
         setAccount(accounts[0]);
         setBalance(ethers.formatEther(ethBalance));
         setTokenBalance(ethers.formatEther(tokenBalance));
+        setHardCap(hardCap);
       } catch (error) {
         console.error(error);
       }
