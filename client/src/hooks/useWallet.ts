@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 import { useState } from 'react';
-import StrawCoinIco from '../contracts/StrawCoinIco.json';
 
 
 export interface WalletData {
@@ -15,7 +14,7 @@ export interface WalletData {
   purchaseTokens: (amount: string) => Promise<void>;
 }
 
-const useWallet = (contractAddress: string) => {
+const useWallet = (contractAddress: string, contractAbi: ({ inputs: { internalType: string; name: string; type: string; }[]; stateMutability: string; type: string; name?: undefined; anonymous?: undefined; outputs?: undefined; } | { inputs: { internalType: string; name: string; type: string; }[]; name: string; type: string; stateMutability?: undefined; anonymous?: undefined; outputs?: undefined; } | { anonymous: boolean; inputs: { indexed: boolean; internalType: string; name: string; type: string; }[]; name: string; type: string; stateMutability?: undefined; outputs?: undefined; } | { inputs: { internalType: string; name: string; type: string; }[]; name: string; outputs: { internalType: string; name: string; type: string; }[]; stateMutability: string; type: string; anonymous?: undefined; })[] | ethers.Interface | ethers.InterfaceAbi) => {
   const [web3, setWeb3] = useState<ethers.BrowserProvider | null>(null);
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [account, setAccount] = useState<string | null>(null);
@@ -33,18 +32,13 @@ const useWallet = (contractAddress: string) => {
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(
           contractAddress,
-          StrawCoinIco.abi,
+          contractAbi,
           signer
         );
-        const ethBalance = await contract.getBalance();
-        const tokenBalance = await contract.getBalanceToken();
-        const hardCap = await contract.getHardCap();
         setWeb3(provider);
         setContract(contract);
         setAccount(accounts[0]);
-        setBalance(ethers.formatEther(ethBalance));
-        setTokenBalance(ethers.formatEther(tokenBalance));
-        setHardCap(ethers.formatEther(hardCap));
+        strawCoinIco(contract);
       } catch (error) {
         console.error(error);
       }
@@ -54,6 +48,15 @@ const useWallet = (contractAddress: string) => {
       );
     }
   };
+
+  const strawCoinIco = async (contract : ethers.Contract) => {
+    const ethBalance = await contract.getBalance();
+    const tokenBalance = await contract.getBalanceToken();
+    const hardCap = await contract.getHardCap();
+    setBalance(ethers.formatEther(ethBalance));
+    setTokenBalance(ethers.formatEther(tokenBalance));
+    setHardCap(ethers.formatEther(hardCap));
+  }
 
   const disconnectWallet = async () => {
     if (window.ethereum) {

@@ -37,7 +37,7 @@ const HomePage: React.FC = () => {
 							decentralized ecosystem and enhance liquidity pools.
 						</p>
 						<Link
-							to="/liquidity"
+							to="/stacking"
 							className="text-blue-500 mt-4 inline-block hover:underline"
 						>
 							Get started

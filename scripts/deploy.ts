@@ -62,6 +62,8 @@ async function main() {
 
     await deployContract("StrawCoinIco", [100000, strawcoin, 1707531426, 1710037026, 200000]);
 
+    await deployContract("StrawCoinStacking", [strawcoin, strawcoin])
+
     
 
   } catch (error) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import { useWalletContext } from '../../hooks/WalletContext';
+import Button from '../atoms/Button';
 
 const NavBar: React.FC = () => {
 	const { web3, connectWallet, account, disconnectWallet } = useWalletContext();
@@ -17,20 +18,20 @@ const NavBar: React.FC = () => {
 						<div className="text-white mr-4">
 							{account?.slice(0, 5) + '...' + account?.slice(39, 42)}
 						</div>
-						<button
+						<Button
 							className="bg-blue-500 text-white py-2 px-4 rounded cursor-pointer"
 							onClick={disconnectWallet}
 						>
 							Disconnect Wallet
-						</button>
+						</Button>
 					</div>
 				) : (
-					<button
+					<Button
 						className="bg-blue-500 text-white py-2 px-4 rounded cursor-pointer"
 						onClick={connectWallet}
 					>
 						Connect Wallet
-					</button>
+					</Button>
 				)}
 			</div>
 		</nav>

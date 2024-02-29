@@ -2,84 +2,146 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+contract StakingRewards {
+    IERC20 public immutable stakingToken;
+    IERC20 public immutable rewardsToken;
 
-contract StrawCoinStacking is Ownable {
+    address public owner;
 
-    IERC20 public stakingToken;
+    // Duration of rewards to be paid out (in seconds)
+    uint public duration;
+    // Timestamp of when the rewards finish
+    uint public finishAt;
+    // Minimum of last updated time and reward finish time
+    uint public updatedAt;
+    // Reward to be paid out per second
+    uint public rewardRate;
+    // Sum of (reward rate * dt * 1e18 / total supply)
+    uint public rewardPerTokenStored;
+    // User address => rewardPerTokenStored
+    mapping(address => uint) public userRewardPerTokenPaid;
+    // User address => rewards to be claimed
+    mapping(address => uint) public rewards;
 
-    IERC20 public rewardToken;
+    // Total staked
+    uint public totalSupply;
+    // User address => staked amount
+    mapping(address => uint) public balanceOf;
 
-    uint256 public stakingStartTime;
-    uint256 public stakingEndTime;
-
-    uint256 public stakingRate;
-
-    mapping(address => uint256) public stakedBalance;
-
-    event Staked(address indexed user, uint256 amount);
-
-    event Unstaked(address indexed user, uint256 amount);
-
-    event RewardsClaimed(address indexed user, uint256 amount);
-
-    constructor(
-        address _stakingToken,
-        address _rewardToken,
-        uint256 _stakingStartTime,
-        uint256 _stakingEndTime,
-        uint256 _stakingRate
-    ) Ownable(msg.sender) {
+    constructor(address _stakingToken, address _rewardToken) {
+        owner = msg.sender;
         stakingToken = IERC20(_stakingToken);
-        rewardToken = IERC20(_rewardToken);
-        stakingStartTime = _stakingStartTime;
-        stakingEndTime = _stakingEndTime;
-        stakingRate = _stakingRate;
+        rewardsToken = IERC20(_rewardToken);
     }
 
-    function stake(uint256 amount) external {
-        require(block.timestamp >= stakingStartTime && block.timestamp <= stakingEndTime, "Staking not allowed at the moment");
-        require(amount > 0, "Cannot stake zero tokens");
-
-        stakingToken.transferFrom(msg.sender, address(this), amount);
-        stakedBalance[msg.sender] = stakedBalance[msg.sender] + amount;
-
-        emit Staked(msg.sender, amount);
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not authorized");
+        _;
     }
 
-    function unstake(uint256 amount) external {
-        require(amount > 0, "Cannot unstake zero tokens");
-        require(stakedBalance[msg.sender] >= amount, "Insufficient staked balance");
+    modifier updateReward(address _account) {
+        rewardPerTokenStored = rewardPerToken();
+        updatedAt = lastTimeRewardApplicable();
 
-        stakingToken.transfer(msg.sender, amount);
-        stakedBalance[msg.sender] = stakedBalance[msg.sender] - amount;
-
-        emit Unstaked(msg.sender, amount);
-    }
-
-    function claimRewards() external {
-        uint256 reward = calculateReward(msg.sender);
-        require(reward > 0, "No rewards to claim");
-
-        rewardToken.transfer(msg.sender, reward);
-
-        emit RewardsClaimed(msg.sender, reward);
-    }
-
-    function calculateReward(address user) public view returns (uint256) {
-        if (block.timestamp <= stakingStartTime || stakedBalance[user] == 0) {
-            return 0;
+        if (_account != address(0)) {
+            rewards[_account] = earned(_account);
+            userRewardPerTokenPaid[_account] = rewardPerTokenStored;
         }
 
-        uint256 stakingDuration = block.timestamp > stakingEndTime ? stakingEndTime - stakingStartTime : block.timestamp  - stakingStartTime;
-        return stakingDuration * stakingRate * stakedBalance[user] / 1e18;
+        _;
     }
 
-    function withdrawRemainingRewards() external onlyOwner {
-        require(block.timestamp > stakingEndTime, "Staking period not yet ended");
-
-        uint256 remainingRewards = rewardToken.balanceOf(address(this));
-        rewardToken.transfer(owner(), remainingRewards);
+    function lastTimeRewardApplicable() public view returns (uint) {
+        return _min(finishAt, block.timestamp);
     }
+
+    function rewardPerToken() public view returns (uint) {
+        if (totalSupply == 0) {
+            return rewardPerTokenStored;
+        }
+
+        return
+            rewardPerTokenStored +
+            (rewardRate * (lastTimeRewardApplicable() - updatedAt) * 1e18) /
+            totalSupply;
+    }
+
+    function stake(uint _amount) external updateReward(msg.sender) {
+        require(_amount > 0, "amount = 0");
+        stakingToken.transferFrom(msg.sender, address(this), _amount);
+        balanceOf[msg.sender] += _amount;
+        totalSupply += _amount;
+    }
+
+    function withdraw(uint _amount) external updateReward(msg.sender) {
+        require(_amount > 0, "amount = 0");
+        balanceOf[msg.sender] -= _amount;
+        totalSupply -= _amount;
+        stakingToken.transfer(msg.sender, _amount);
+    }
+
+    function earned(address _account) public view returns (uint) {
+        return
+            ((balanceOf[_account] *
+                (rewardPerToken() - userRewardPerTokenPaid[_account])) / 1e18) +
+            rewards[_account];
+    }
+
+    function getReward() external updateReward(msg.sender) {
+        uint reward = rewards[msg.sender];
+        if (reward > 0) {
+            rewards[msg.sender] = 0;
+            rewardsToken.transfer(msg.sender, reward);
+        }
+    }
+
+    function setRewardsDuration(uint _duration) external onlyOwner {
+        require(finishAt < block.timestamp, "reward duration not finished");
+        duration = _duration;
+    }
+
+    function notifyRewardAmount(
+        uint _amount
+    ) external onlyOwner updateReward(address(0)) {
+        if (block.timestamp >= finishAt) {
+            rewardRate = _amount / duration;
+        } else {
+            uint remainingRewards = (finishAt - block.timestamp) * rewardRate;
+            rewardRate = (_amount + remainingRewards) / duration;
+        }
+
+        require(rewardRate > 0, "reward rate = 0");
+        require(
+            rewardRate * duration <= rewardsToken.balanceOf(address(this)),
+            "reward amount > balance"
+        );
+
+        finishAt = block.timestamp + duration;
+        updatedAt = block.timestamp;
+    }
+
+    function _min(uint x, uint y) private pure returns (uint) {
+        return x <= y ? x : y;
+    }
+}
+
+interface IERC20 {
+    function totalSupply() external view returns (uint);
+
+    function balanceOf(address account) external view returns (uint);
+
+    function transfer(address recipient, uint amount) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint amount) external returns (bool);
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
 }
