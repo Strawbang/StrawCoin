@@ -10,7 +10,7 @@ const NavBar: React.FC = () => {
 		<nav className="bg-gray-800 p-4">
 			<div className="container mx-auto flex justify-between items-center">
 				<Link to="/" className="text-white text-lg font-bold">
-					StrawSwap
+					StrawCoin
 				</Link>
 				{web3 ? (
 					<div className="flex items-center">

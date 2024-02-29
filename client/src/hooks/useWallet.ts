@@ -8,7 +8,8 @@ export interface WalletData {
   contract: ethers.Contract | null;
   account: string | null;
   balance: string | null;
-  tokenBalance: string | null;
+  tokenBalance: string;
+  hardCap: string;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
   purchaseTokens: (amount: string) => Promise<void>;
@@ -37,13 +38,13 @@ const useWallet = (contractAddress: string) => {
         );
         const ethBalance = await contract.getBalance();
         const tokenBalance = await contract.getBalanceToken();
-        const hardCap = await contract.hardCap();
+        const hardCap = await contract.getHardCap();
         setWeb3(provider);
         setContract(contract);
         setAccount(accounts[0]);
         setBalance(ethers.formatEther(ethBalance));
         setTokenBalance(ethers.formatEther(tokenBalance));
-        setHardCap(hardCap);
+        setHardCap(ethers.formatEther(hardCap));
       } catch (error) {
         console.error(error);
       }
@@ -88,6 +89,7 @@ const useWallet = (contractAddress: string) => {
     contract,
     account,
     balance,
+    hardCap,
     tokenBalance,
     connectWallet,
     disconnectWallet,

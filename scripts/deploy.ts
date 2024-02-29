@@ -1,6 +1,11 @@
 import { BaseContract, ContractTransactionResponse } from "ethers";
+import fs from "fs";
 import { artifacts, ethers } from "hardhat";
 import path from "path";
+
+interface ContractAddresses {
+  [contractName: string]: string;
+}
 
 async function deployContract(contractName: string, args: any[]): Promise<string | null | undefined> {
   try {
@@ -21,16 +26,26 @@ async function deployContract(contractName: string, args: any[]): Promise<string
 }
 
 async function saveFrontendFiles(token: BaseContract & { deploymentTransaction(): ContractTransactionResponse; } & Omit<BaseContract, keyof BaseContract>, contractName: string) {
-  const fs = require("fs");
   const contractsDir = path.join(__dirname, "..", "client", "src", "contracts");
+  const addressFilePath = path.join(contractsDir, "address.json");
 
   if (!fs.existsSync(contractsDir)) {
     fs.mkdirSync(contractsDir);
   }
 
+  let existingAddresses: ContractAddresses = {};
+
+  if (fs.existsSync(addressFilePath)) {
+    const existingFileContent = fs.readFileSync(addressFilePath, "utf-8");
+    existingAddresses = JSON.parse(existingFileContent);
+  }
+
+  const newContractAddress = await token.getAddress();
+  existingAddresses[contractName] = newContractAddress;
+
   fs.writeFileSync(
-    path.join(contractsDir, "address.json"),
-    JSON.stringify({ [contractName]: await token.getAddress() }, undefined, 2),
+    addressFilePath,
+    JSON.stringify(existingAddresses, undefined, 2),
   );
 
   const TokenArtifact = artifacts.readArtifactSync(contractName);
@@ -46,6 +61,8 @@ async function main() {
     const strawcoin = await deployContract("StrawCoin", []);
 
     await deployContract("StrawCoinIco", [100000, strawcoin, 1707531426, 1710037026, 200000]);
+
+    
 
   } catch (error) {
     console.error("Error in main function:", error);

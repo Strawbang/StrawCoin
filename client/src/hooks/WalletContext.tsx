@@ -1,5 +1,5 @@
 import React, { createContext, ReactNode, useContext } from 'react';
-import address from '../contracts/contract-address.json';
+import address from '../contracts/address.json';
 import useWallet, { WalletData } from '../hooks/useWallet';
 
 interface WalletProviderProps {
